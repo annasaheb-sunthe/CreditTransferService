@@ -62,7 +62,7 @@ public class CreditTransferServiceController {
 		if (customerResponse.getResponseCode() != 200) {
 			auditLog = commonMethods.getAuditLog(creditTransfer, "FAILED", "Request processing failed");
 		} else {
-			auditLog = commonMethods.getAuditLog(creditTransfer, "COMPLTED", "Request processed successfully");
+			auditLog = commonMethods.getAuditLog(creditTransfer, "COMPLETED", "Request processed successfully");
 		}
 		
 		responseAuditLog = internalApiInvoker.auditLogApiCall(auditLog);
