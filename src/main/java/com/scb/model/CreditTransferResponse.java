@@ -16,6 +16,7 @@ public class CreditTransferResponse {
 	
 	private long responseCode;
 	private String responseMessage;
+	private String responseData;
 	//@XmlElement(name = "CustomerResponse")
 	private BalanceEnquiry customerRequestData;
 }

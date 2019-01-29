@@ -1,12 +1,17 @@
 package com.scb.serviceImpl;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageConverter;
+import org.springframework.http.converter.json.MappingJackson2HttpMessageConverter;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
@@ -17,7 +22,6 @@ import com.scb.model.AuditLog;
 import com.scb.model.BalanceEnquiry;
 import com.scb.model.CreditTransferResponse;
 import com.scb.model.CreditTransferValidateResponse;
-import com.scb.model.MsAuditLog;
 import com.scb.model.MsErrorLog;
 import com.scb.model.PersistanceData;
 import com.scb.model.ProcessFlowSequence;
@@ -39,7 +43,9 @@ public class InternalApiInvoker {
 	private ServiceUtil commonMethods;
 	
 	public ResponseEntity<CreditTransferResponse> persistenceServiceApiCall(PersistanceData persistanceData) {
-		log.info("OutwardBalanceEnquiry in persistence service: " + persistanceData);
+		//log.info("OutwardBalanceEnquiry in persistence service: " + persistanceData);
+		log.info("RequestData in persistenceServiceApiCall - Transaction Type: " + persistanceData.getTransactionType() 
+		+ " Transaction Sub Type :" + persistanceData.getTransactionSubType() + " Payload Format :" + persistanceData.getPayloadFormat());
 		ResponseEntity<CreditTransferResponse> persistenceServiceApi = null;
 		ResponseEntity<ResponseMessage> reponseMessage = null;
 		try {
@@ -80,16 +86,35 @@ public class InternalApiInvoker {
 	}
 
 	public ResponseEntity<CreditTransferResponse> serviceApiCall(RequestData requestData, String serviceURL) {
-		log.info("RequestData in serviceApiCall: " + requestData);
-		log.info("RequestData in serviceURL: " + serviceURL);
+		log.info("RequestData in serviceApiCall - Transaction Type: " + requestData.getTransactionType() 
+			+ " Transaction Sub Type :" + requestData.getTransactionSubType() + " Payload Format :" + requestData.getPayloadFormat());
+		log.info("ServiceURL in serviceApiCall: " + serviceURL);
 		ResponseEntity<CreditTransferResponse> serviceApiResponse = null;
 		ResponseEntity<ResponseMessage> reponseMessage = null;
 		try {
+			
+			 List<HttpMessageConverter<?>> messageConverters = new ArrayList<HttpMessageConverter<?>>();        
+	         //Add the Jackson Message converter
+			 MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();
+			 // Note: here we are making this converter to process any kind of response, 
+			 // not only application/*json, which is the default behaviour
+			 List<MediaType> mediaList = new ArrayList<MediaType>();
+			 mediaList.add(MediaType.APPLICATION_JSON);
+			 mediaList.add(MediaType.APPLICATION_JSON_UTF8);
+			 mediaList.add(MediaType.APPLICATION_XML);
+			 mediaList.add(MediaType.APPLICATION_XHTML_XML);
+			 //converter.setSupportedMediaTypes(Arrays.asList({MediaType.ALL}));
+			 converter.setSupportedMediaTypes(mediaList);
+			 //converter.setSupportedMediaTypes(Collections.singletonList(MediaType.ALL));
+			 messageConverters.add(converter);  
+			 restTemplate.setMessageConverters(messageConverters);  
+	   
+	   
 			HttpEntity<RequestData> entity = new HttpEntity<RequestData>(requestData);
 			log.info("calling restTemplate...");
 			reponseMessage = restTemplate.exchange(serviceURL, HttpMethod.POST, entity, ResponseMessage.class);
 			log.info("reponseMessage : " + reponseMessage);
-			CreditTransferResponse br = new CreditTransferResponse().builder().responseCode(reponseMessage.getBody().getResponseCode()).responseMessage(reponseMessage.getBody().getResponseMessage()).build();
+			CreditTransferResponse br = new CreditTransferResponse().builder().responseCode(reponseMessage.getBody().getResponseCode()).responseMessage(reponseMessage.getBody().getResponseMessage()).responseData(reponseMessage.getBody().getResponseData()).build();
 			serviceApiResponse = new ResponseEntity<CreditTransferResponse>(br, HttpStatus.OK);
 			log.info("Response Entity [serviceApiResponse] : " + serviceApiResponse);
 		} catch (HttpClientErrorException | HttpServerErrorException httpClientOrServerEx) {

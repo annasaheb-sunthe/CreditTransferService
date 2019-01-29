@@ -17,5 +17,6 @@ public class ResponseMessage {
 	private long responseCode;
 	private String responseMessage;
 	private String processes;
+	private String responseData;
 	//private List list;
 }
